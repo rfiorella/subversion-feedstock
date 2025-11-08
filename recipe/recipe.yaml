@@ -1,0 +1,80 @@
+schema_version: 1
+
+context:
+  name: subversion
+  version: 1.14.5
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://downloads.apache.org/subversion/subversion-${{ version }}.tar.bz2
+  sha256: e78a29e7766b8b7b354497d08f71a55641abc53675ce1875584781aae35644a1
+
+build:
+  number: 5
+  skip: win or ppc64le
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - if: unix
+      then: autoconf
+    - if: unix
+      then: automake
+    - gettext-tools
+    - make
+    - nasm
+    - if: unix
+      then: pkg-config
+    - python
+  host:
+    - if: unix
+      then: cyrus-sasl
+    - expat
+    - if: unix
+      then: gnupg
+    - libapr
+    - libaprutil
+    - libboost-headers
+    - libdb
+    - if: not linux
+      then: libintl-devel
+    - if: unix
+      then: libtool
+    - if: unix
+      then: libmagic
+    - libutf8proc
+    - lz4-c
+    - openssl
+    - perl
+    - if: linux
+      then: serf
+    - sqlite
+    - swig
+    - zlib
+  run:
+    - perl
+
+tests:
+  - script:
+      - svn --help
+      - perl -e 'use SVN::Client; use SVN::Core;'
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Enterprise-class centralized version control for the masses
+  homepage: https://subversion.apache.org/
+  repository: https://subversion.apache.org/source-code.html
+  documentation: https://subversion.apache.org/docs/
+
+extra:
+  recipe-maintainers:
+    - danielnachun
+    - scopatz
+    - zklaus
+    - rfiorella
