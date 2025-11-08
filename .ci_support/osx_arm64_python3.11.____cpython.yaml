@@ -21,21 +21,27 @@ cxx_compiler_version:
 expat:
 - '2'
 libboost_headers:
-- '1.90'
+- '1.88'
 libutf8proc:
 - '2.11'
 lz4_c:
 - '1.10'
 macos_machine:
-- x86_64-apple-darwin13.4.0
+- arm64-apple-darwin20.0.0
 openssl:
 - '3.5'
 perl:
 - 5.32.1
+pin_run_as_build:
+  python:
+    min_pin: x.x
+    max_pin: x.x
+python:
+- 3.11.* *_cpython
 sqlite:
 - '3'
 target_platform:
-- osx-64
+- osx-arm64
 zip_keys:
 - - c_compiler_version
   - cxx_compiler_version
