@@ -52,8 +52,7 @@ requirements:
     - lz4-c
     - openssl
     - perl
-    - if: linux
-      then: serf
+    - serf
     - sqlite
     - swig
     - zlib
