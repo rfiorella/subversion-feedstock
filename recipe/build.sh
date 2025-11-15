@@ -9,7 +9,14 @@ export CFLAGS="${CFLAGS} -U__USE_XOPEN2K -std=c99"
   --enable-svnxx \
   --enable-bdb6 \
   --with-sqlite="${PREFIX}" \
-  --disable-static
+  --disable-static \
+  --prefix="${PREFIX}" \
+  --with-apr="${PREFIX}" \
+  --with-apr-util="${PREFIX}" \
+  --with-serf="${PREFIX}" \
+  --with-swig \
+  --with-swig-perl="${PREFIX}/bin/perl" \
+  "$@"
 
 make -j ${CPU_COUNT}
 if [[ "${CONDA_BUILD_CROSS_COMPILATION:-}" != "1" || "${CROSSCOMPILING_EMULATOR:-}" != "" ]]; then
