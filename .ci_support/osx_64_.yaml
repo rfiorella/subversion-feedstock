@@ -5,7 +5,7 @@ MACOSX_SDK_VERSION:
 c_compiler:
 - clang
 c_compiler_version:
-- '17'
+- '19'
 c_stdlib:
 - macosx_deployment_target
 c_stdlib_version:
@@ -17,17 +17,19 @@ channel_targets:
 cxx_compiler:
 - clangxx
 cxx_compiler_version:
-- '17'
+- '19'
 expat:
 - '2'
 libboost_headers:
 - '1.86'
+libutf8proc:
+- '2.11'
 lz4_c:
-- 1.9.3
+- '1.10'
 macos_machine:
 - x86_64-apple-darwin13.4.0
 openssl:
-- '3'
+- '3.5'
 perl:
 - 5.32.1
 sqlite:
