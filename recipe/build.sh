@@ -18,17 +18,15 @@ export CFLAGS="${CFLAGS} -U__USE_XOPEN2K -std=c99"
   --with-swig-perl="${PREFIX}/bin/perl" \
   "$@"
 
-make -j ${CPU_COUNT}
+
 if [[ "${CONDA_BUILD_CROSS_COMPILATION:-}" != "1" || "${CROSSCOMPILING_EMULATOR:-}" != "" ]]; then
     make -j ${CPU_COUNT} check CLEANUP=true TESTS=subversion/tests/cmdline/basic_tests.py
+else
+    make -j ${CPI_COUNT}
 fi
 make install
 
-if [[ ${target_platform} != "osx-arm64" ]]; then
-    make swig-pl-lib
-    make install-swig-pl-lib
-    pushd subversion/bindings/swig/perl/native
-    "$BUILD_PREFIX/bin/perl" Makefile.PL INSTALLDIRS=vendor NO_PERLLOCAL=1 NO_PACKLIST=1
-    make install
-    popd
-fi
+make swig-pl-lib
+make install-swig-pl-lib
+
+
