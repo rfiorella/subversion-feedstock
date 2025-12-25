@@ -20,8 +20,8 @@ export CFLAGS="${CFLAGS} -U__USE_XOPEN2K -std=c99"
 
 
 # Ensure Perl can find the modules
-if [ -d "${PREFIX}/lib/perl5" ]; then
-    export PERL5LIB="${PREFIX}/lib/perl5:${PERL5LIB:-}"
+if [ -d "${PREFIX}/lib/" ]; then
+    export PERL5LIB="${PREFIX}/lib:${PERL5LIB:-}"
 fi
 
 if [[ "${CONDA_BUILD_CROSS_COMPILATION:-}" != "1" || "${CROSSCOMPILING_EMULATOR:-}" != "" ]]; then
