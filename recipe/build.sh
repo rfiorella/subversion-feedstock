@@ -31,6 +31,23 @@ else
 fi
 make install
 
-make swig-pl-lib
-make install-swig-pl-lib
+# Get Perl's architecture-specific directory
+PERL_ARCHLIB=$(perl -MConfig -e 'print $Config{sitearchexp}')
+PERL_LIB=$(perl -MConfig -e 'print $Config{sitelibexp}')
+
+echo "=== Perl configuration ==="
+echo "PERL_ARCHLIB: ${PERL_ARCHLIB}"
+echo "PERL_LIB: ${PERL_LIB}"
+
+# Install Perl bindings with explicit paths
+make install-swig-pl-lib \
+  INSTALLDIRS=site \
+  INSTALLSITEARCH="${PERL_ARCHLIB}" \
+  INSTALLSITELIB="${PERL_LIB}"
+
+# Debug: show where modules were installed
+echo "=== Installed Perl modules ===" 
+find ${PREFIX} -name "Client.pm" -o -name "*svn*.so" 2>/dev/null | head -20
+echo "=== Perl @INC paths ==="
+perl -e 'print join("\n", @INC), "\n"'
 
