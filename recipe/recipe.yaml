@@ -62,6 +62,9 @@ requirements:
 tests:
   - script:
       - svn --help
+      - find $PREFIX/lib/perl5 -name "*.pm" -path "*/SVN/*" || echo "No SVN .pm files found under $PREFIX/lib/perl5"
+      - find $PREFIX/lib -name "Client.pm" -path "*/SVN/*" || echo "No SVN Client.pm found under $PREFIX/lib"
+      - perl -MConfig -e 'print "sitelib=$Config{installsitelib}\nsitearch=$Config{installsitearch}\n"'
       - perl -e 'use SVN::Client; use SVN::Core;'
 
 about:
