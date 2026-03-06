@@ -4,6 +4,12 @@ set -ex
 export CFLAGS="${CFLAGS} -U__USE_XOPEN2K -std=c99"
 
 ./autogen.sh
+if [[ "${CONDA_BUILD_CROSS_COMPILATION:-}" == "1" ]]; then
+  SWIG_BIN="${BUILD_PREFIX}/bin/swig"
+else
+  SWIG_BIN="${PREFIX}/bin/swig"
+fi
+
 ./configure \
   --prefix="${PREFIX}" \
   --enable-svnxx \
@@ -14,7 +20,7 @@ export CFLAGS="${CFLAGS} -U__USE_XOPEN2K -std=c99"
   --with-apr="${PREFIX}" \
   --with-apr-util="${PREFIX}" \
   --with-serf="${PREFIX}" \
-  --with-swig \
+  --with-swig="${SWIG_BIN}" \
   --with-swig-perl="${PREFIX}/bin/perl" \
   "$@"
 

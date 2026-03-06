@@ -32,6 +32,7 @@ requirements:
       then: pkg-config
     - python
     - perl
+    - swig >=4.0,<4.4
   host:
     - if: unix
       then: cyrus-sasl
@@ -54,7 +55,6 @@ requirements:
     - perl
     - serf
     - sqlite
-    - swig >=4.0,<4.4
     - zlib
   run:
     - perl
