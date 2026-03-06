@@ -4,11 +4,7 @@ set -ex
 export CFLAGS="${CFLAGS} -U__USE_XOPEN2K -std=c99"
 
 ./autogen.sh
-if [[ "${CONDA_BUILD_CROSS_COMPILATION:-}" == "1" ]]; then
-  SWIG_BIN="${BUILD_PREFIX}/bin/swig"
-else
-  SWIG_BIN="${PREFIX}/bin/swig"
-fi
+SWIG_BIN="${BUILD_PREFIX}/bin/swig"
 
 ./configure \
   --prefix="${PREFIX}" \
