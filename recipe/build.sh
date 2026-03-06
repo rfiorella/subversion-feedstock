@@ -48,21 +48,61 @@ make swig-pl
 
 make install-swig-pl
 
-# Subversion's install-swig-pl puts perl modules under lib/site_perl/ but
-# conda perl's @INC expects them under lib/perl5/. Move them to the right place.
-# Note: perl -MConfig returns BUILD_PREFIX paths since perl is in the build env,
-# so we substitute BUILD_PREFIX with PREFIX to get the correct target path.
-SITEARCH=$(perl -MConfig -e 'print $Config{installsitearch}')
-SITEARCH="${SITEARCH/${BUILD_PREFIX}/${PREFIX}}"
-SVN_PERL_DIR=$(find ${PREFIX}/lib/site_perl -name "SVN" -type d 2>/dev/null | head -1)
-if [ -n "${SVN_PERL_DIR}" ]; then
-    SVN_PERL_PARENT=$(dirname "${SVN_PERL_DIR}")
-    mkdir -p "${SITEARCH}"
-    cp -a "${SVN_PERL_PARENT}"/* "${SITEARCH}"/
-    # Clean up the incorrect install location
-    rm -rf "${PREFIX}/lib/site_perl"
+# Relocate Perl SVN modules to the correct @INC path if needed.
+# make install-swig-pl may put modules in different locations depending on
+# platform (e.g. lib/site_perl/, lib/perl5/site_perl/, etc.). We search
+# broadly, then move them to where the host perl's @INC expects them.
+
+# Find where SVN/Client.pm was actually installed
+SVN_CLIENT_PM=$(find "${PREFIX}" -name "Client.pm" -path "*/SVN/*" 2>/dev/null | head -1)
+if [ -z "${SVN_CLIENT_PM}" ]; then
+    echo "ERROR: SVN::Client.pm was not installed anywhere under ${PREFIX}"
+    exit 1
+fi
+SVN_INSTALL_DIR=$(dirname "$(dirname "${SVN_CLIENT_PM}")")
+echo "Found SVN modules installed at: ${SVN_INSTALL_DIR}"
+
+# Determine the correct target directory from the host perl.
+# Prefer the host perl at ${PREFIX}/bin/perl; fall back to build perl with
+# BUILD_PREFIX→PREFIX substitution.
+if [ -x "${PREFIX}/bin/perl" ]; then
+    TARGET_SITEARCH=$("${PREFIX}/bin/perl" -MConfig -e 'print $Config{installsitearch}')
+else
+    TARGET_SITEARCH=$(perl -MConfig -e 'print $Config{installsitearch}')
+    TARGET_SITEARCH="${TARGET_SITEARCH/${BUILD_PREFIX}/${PREFIX}}"
+fi
+echo "Target sitearch directory: ${TARGET_SITEARCH}"
+
+# Check if modules are already in the right place; relocate if not.
+if [ "${SVN_INSTALL_DIR}" != "${TARGET_SITEARCH}" ]; then
+    echo "Relocating SVN modules from ${SVN_INSTALL_DIR} to ${TARGET_SITEARCH}"
+    mkdir -p "${TARGET_SITEARCH}"
+    cp -a "${SVN_INSTALL_DIR}"/* "${TARGET_SITEARCH}"/
+    # Clean up the old install location (remove the top-level non-perl5 dir)
+    OLD_TOPLEVEL="${SVN_INSTALL_DIR}"
+    # Walk up to find the first directory under ${PREFIX}/lib that isn't under perl5
+    while [ "$(dirname "${OLD_TOPLEVEL}")" != "${PREFIX}/lib" ] && \
+          [ "$(dirname "${OLD_TOPLEVEL}")" != "${PREFIX}" ]; do
+        OLD_TOPLEVEL=$(dirname "${OLD_TOPLEVEL}")
+    done
+    if [[ "${OLD_TOPLEVEL}" != *"/perl5/"* ]] && [[ "${OLD_TOPLEVEL}" != *"/perl5" ]]; then
+        rm -rf "${OLD_TOPLEVEL}"
+    fi
+else
+    echo "SVN modules already in correct location"
 fi
 
-# Diagnostic: verify modules are in the right place
-find ${PREFIX}/lib/perl5 -name "Client.pm" -path "*/SVN/*" 2>/dev/null || echo "WARNING: SVN::Client.pm not found under ${PREFIX}/lib/perl5"
+# Verify modules are findable by the host perl
+if [ -x "${PREFIX}/bin/perl" ]; then
+    "${PREFIX}/bin/perl" -e 'use SVN::Client; use SVN::Core; print "SVN::Client OK\n"' || {
+        echo "ERROR: SVN::Client not loadable by host perl even after relocation"
+        find "${PREFIX}/lib" -name "Client.pm" -path "*/SVN/*" 2>/dev/null
+        exit 1
+    }
+else
+    find "${TARGET_SITEARCH}" -name "Client.pm" -path "*/SVN/*" || {
+        echo "ERROR: SVN::Client.pm not found in ${TARGET_SITEARCH}"
+        exit 1
+    }
+fi
 
