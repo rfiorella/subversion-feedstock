@@ -6,6 +6,37 @@ export CFLAGS="${CFLAGS} -U__USE_XOPEN2K -std=c99"
 ./autogen.sh
 SWIG_BIN="${BUILD_PREFIX}/bin/swig"
 
+# Cross-compile from x86 build_prefix to arm64 target: build_prefix perl's
+# %Config{ccflags,cccdlflags,...} carries x86-only flags (-march=core2,
+# -mtune=haswell, -mssse3). SVN's swig-pl rule and Makefile.PL inject those
+# flags into the arm64 compile line; clang rejects them. Install a Perl shim
+# that filters %Config at FETCH time, and activate it via PERL5OPT before
+# configure so the generated Makefile and any later Makefile.PL inherit the
+# filtered values.
+if [[ "${target_platform}" == "osx-arm64" && "${CONDA_BUILD_CROSS_COMPILATION:-}" == "1" ]]; then
+    mkdir -p "${SRC_DIR}/perl-shim"
+    cat > "${SRC_DIR}/perl-shim/ConfigFilter.pm" <<'EOF'
+package ConfigFilter;
+require Config;
+my $orig = \&Config::FETCH;
+{
+    no warnings 'redefine';
+    *Config::FETCH = sub {
+        my $v = $orig->(@_);
+        if (defined $v) {
+            $v =~ s/\s*-march=\S+//g;
+            $v =~ s/\s*-mtune=\S+//g;
+            $v =~ s/\s*-mssse3\b//g;
+        }
+        $v;
+    };
+}
+1;
+EOF
+    export PERL5LIB="${SRC_DIR}/perl-shim${PERL5LIB:+:${PERL5LIB}}"
+    export PERL5OPT="-MConfigFilter${PERL5OPT:+ ${PERL5OPT}}"
+fi
+
 ./configure \
   --prefix="${PREFIX}" \
   --enable-svnxx \
