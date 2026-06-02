@@ -108,12 +108,16 @@ echo "All *.bundle / *.so for SVN:"
 find "${PREFIX}" \( -name "_Client*" -o -name "_Core*" -o -name "_Repos*" \) 2>/dev/null | head -40
 echo "=== END DEBUG ==="
 
-SVN_PERL_DIR=$(find ${PREFIX}/lib/site_perl -name "SVN" -type d 2>/dev/null | head -1)
-if [ -n "${SVN_PERL_DIR}" ]; then
-    SVN_PERL_PARENT=$(dirname "${SVN_PERL_DIR}")
+# SVN's install-swig-pl writes to ${PREFIX}/lib/site_perl/<ver>/<archname>/
+# which is NOT in conda perl's @INC. Move contents into SITEARCH.
+# Use the .pm-containing SVN dir (not auto/SVN) to find the arch root, so we
+# copy BOTH SVN/*.pm and auto/SVN/_*/_*.so (the prior single-find approach
+# picked auto/SVN alphabetically and dropped the .pm files).
+SVN_PM=$(find "${PREFIX}/lib/site_perl" -path '*/SVN/Client.pm' 2>/dev/null | head -1)
+if [ -n "${SVN_PM}" ]; then
+    SRC_ARCH_DIR=$(dirname "$(dirname "${SVN_PM}")")
     mkdir -p "${SITEARCH}"
-    cp -a "${SVN_PERL_PARENT}"/* "${SITEARCH}"/
-    # Clean up the incorrect install location
+    cp -a "${SRC_ARCH_DIR}"/* "${SITEARCH}"/
     rm -rf "${PREFIX}/lib/site_perl"
 fi
 
