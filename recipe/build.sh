@@ -87,6 +87,27 @@ make install-swig-pl
 # so we substitute BUILD_PREFIX with PREFIX to get the correct target path.
 SITEARCH=$("${BUILD_PREFIX}/bin/perl" -MConfig -e 'print $Config{installsitearch}')
 SITEARCH="${SITEARCH/${BUILD_PREFIX}/${PREFIX}}"
+
+echo "=== DEBUG perl-bindings layout ==="
+echo "target_platform=${target_platform:-unset}"
+echo "CONDA_BUILD_CROSS_COMPILATION=${CONDA_BUILD_CROSS_COMPILATION:-unset}"
+echo "BUILD_PREFIX=${BUILD_PREFIX}"
+echo "PREFIX=${PREFIX}"
+echo "BUILD_PREFIX perl -V archname/installsitearch/installsitelib:"
+"${BUILD_PREFIX}/bin/perl" -MConfig -e 'for (qw(archname installsitearch installsitelib installarchlib privlib sitelib)) { print "  $_ = $Config{$_}\n" }'
+if [ -x "${PREFIX}/bin/perl" ]; then
+    echo "PREFIX perl -V archname/installsitearch (may fail on cross):"
+    "${PREFIX}/bin/perl" -MConfig -e 'for (qw(archname installsitearch installsitelib)) { print "  $_ = $Config{$_}\n" }' 2>&1 || echo "  (PREFIX perl exec failed)"
+fi
+echo "Derived SITEARCH=${SITEARCH}"
+echo "PREFIX/lib/site_perl tree:"
+find "${PREFIX}/lib/site_perl" -maxdepth 6 2>/dev/null | head -40 || echo "  (no site_perl tree)"
+echo "All SVN/*.pm anywhere under PREFIX:"
+find "${PREFIX}" -path "*/SVN/*.pm" 2>/dev/null | head -40
+echo "All *.bundle / *.so for SVN:"
+find "${PREFIX}" \( -name "_Client*" -o -name "_Core*" -o -name "_Repos*" \) 2>/dev/null | head -40
+echo "=== END DEBUG ==="
+
 SVN_PERL_DIR=$(find ${PREFIX}/lib/site_perl -name "SVN" -type d 2>/dev/null | head -1)
 if [ -n "${SVN_PERL_DIR}" ]; then
     SVN_PERL_PARENT=$(dirname "${SVN_PERL_DIR}")
@@ -96,16 +117,23 @@ if [ -n "${SVN_PERL_DIR}" ]; then
     rm -rf "${PREFIX}/lib/site_perl"
 fi
 
-# Verify modules are findable by the host perl
-if [ -x "${PREFIX}/bin/perl" ]; then
+# Verify modules are findable. Skip runtime load when cross-compiling because
+# PREFIX perl binary is built for the target arch and cannot exec on the
+# build host. The recipe's tests: block re-runs the load on the target.
+if [[ "${CONDA_BUILD_CROSS_COMPILATION:-}" == "1" && -z "${CROSSCOMPILING_EMULATOR:-}" ]]; then
+    find "${SITEARCH}" -name "Client.pm" -path "*/SVN/*" || {
+        echo "ERROR: SVN::Client.pm not found in ${SITEARCH}"
+        exit 1
+    }
+elif [ -x "${PREFIX}/bin/perl" ]; then
     "${PREFIX}/bin/perl" -e 'use SVN::Client; use SVN::Core; print "SVN::Client OK\n"' || {
         echo "ERROR: SVN::Client not loadable by host perl even after relocation"
         find "${PREFIX}/lib" -name "Client.pm" -path "*/SVN/*" 2>/dev/null
         exit 1
     }
 else
-    find "${TARGET_SITEARCH}" -name "Client.pm" -path "*/SVN/*" || {
-        echo "ERROR: SVN::Client.pm not found in ${TARGET_SITEARCH}"
+    find "${SITEARCH}" -name "Client.pm" -path "*/SVN/*" || {
+        echo "ERROR: SVN::Client.pm not found in ${SITEARCH}"
         exit 1
     }
 fi
