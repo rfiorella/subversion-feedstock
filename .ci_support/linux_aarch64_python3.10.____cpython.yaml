@@ -19,7 +19,7 @@ docker_image:
 expat:
 - '2'
 libboost_headers:
-- '1.88'
+- '1.90'
 libutf8proc:
 - '2.11'
 lz4_c:
